@@ -1,0 +1,524 @@
+use ca2
+
+////////////////////////////////////////////
+//         Part 1: Read (Find)            //
+////////////////////////////////////////////
+
+// •	Six queries, 5 marks each, Total 30 marks
+
+// •	Comparison operators e.g. $in, $nin, $gt, $gte, $lte, $lt
+// •	Array operators: e.g. $elemMatch, $all
+// •	Projection
+// •	Cursor methods e.g. limit, skip, sort and count
+
+// db.collection.find()
+// db.collection.findOne()
+
+// Mark out of 5 based on complexity (top marks for including a range of comparison and array operators, projection and cursor methods in each query – see sample queries)
+
+
+//Part 1, Query 1
+
+// I want to find a Christmas movie, so any movie with Christmas in either the plot or title.
+// it has to be recent so made after the 2010. Must be suitable for children so must include 
+// and exclude some genres and ratings, sorted by decending imdb rating and only show the top 
+// three
+
+// This find() statment includes an or and regex function, five comparison operators, an 
+// array operator, projection and two cursor methods.
+
+db.movies.find(
+  {
+    $or: [
+      { plot: { $regex: /\bChristmas\b/i } },
+      { title: { $regex: /\bChristmas\b/i } },
+      { fullplot: { $regex: /\bChristmas\b/i } }
+    ],
+    year: { $gte: 2010 },
+    genres: {
+      $nin: ["Horror", "War", "History"],
+      $elemMatch: { $in: ["Family", "Fantasy", "Animation"] }
+    },
+    rated: { $nin: ["R", "PG-13"], $in: ["PG", "G"]}
+  },
+  {
+    title: 1,
+    genres: 1,
+    rated: 1,
+    _id: 0,
+    year: 1
+  }
+).sort({ "imdb.rating": -1 }).limit(3)
+
+
+//Part 1, Query 2
+
+// Searching for one of my favourite movies, however I've forgetten it's name 
+// (I know it contains the word blue). I'm searching for it using deatils I 
+// know about it. I know the director, the run time is less than 100 minutes,
+// the three types of genres
+
+// this statement is an example of a findOne to return the first found movie,
+// it contains 2 comparasion operators, an array operator, projection and a
+// pattern matching operator
+
+db.movies.findOne(
+  {
+    genres: { $all: [ 'Animation', 'Horror', 'Mystery' ]},
+    directors: { $elemMatch: { $eq: 'Satoshi Kon' } },
+    title: { $regex: /\bBlue\b/i },
+    runtime: { $lt: 100 },
+  },
+  {
+    title: 1,
+    plot: 1,
+    fullplot: 1,
+    genres: 1,
+    _id: 0
+  }
+)
+
+
+//Part 1, Query 3
+
+// Searching for one movie to watch which must be a romantic comedy, set in the UK,
+// released between 2000 to 2010, the plot must contain certain places in the UK,
+// and the cast must have at least one of the three male actors.
+
+// this statement is an example of a findOne to return the first found movie,
+// it contains 3 comparasion operators, an array operator, projection and a
+// pattern matching operator
+
+db.movies.findOne(
+  {
+    genres: {
+      $all: ["Romance", "Comedy"]
+    },
+    countries: "UK",
+    "released": {
+      $gte: ISODate("2000-01-01T00:00:00Z"),
+      $lte: ISODate("2011-01-01T00:00:00Z")
+    },
+    plot: {
+      $regex: /\b(Wales|Scotland|England|London)\b/i
+    },
+    cast: {$in: ["Jude Law", "Hugh Grant", "Colin Firth"]}
+  },
+  {
+    title: 1,
+    cast: 1,
+    "released": 1,
+    "imdb.rating": 1,
+    _id: 0
+  }
+);
+
+
+//Part 1, Query 4
+
+// Find how many movies between 2000 and 2010 that recieved perfect tomatoe viewer ratings (5/5),
+// and recieve a very high imbd rating (over 8), must be either a documentart or a short, it 
+// skips the first movie because I've already watched it.
+
+// this statement is an example of a find function  it contains 5 comparasion 
+// operators, projection and 2 cusor methods 
+
+db.movies.find({
+  year: { $lte: 2010, $gte: 2000 },
+  "tomatoes.viewer.rating": {$eq: 5.0},
+  "imdb.rating": {$gte: 8.0},
+  genres:{$in: ['Short', 'Documentary']}
+}, {
+  title: 1,
+  "tomatoes.viewer.rating": 1,
+  "imdb.rating": 1,
+  genres: 1,
+  _id: 0
+}).sort({"imdb.rating": -1}).skip(1)
+
+
+// Part 1, Query 5
+
+// We have found out that comments made on certain movies are fake,
+// all comments made between 2011 and 2012 and comments made with 
+// certain emails. These comments must be counted 
+
+// This find() statment includes an or and regex function, 2 comparison operators, 
+// an array operator and a cursor methods.
+
+db.movies.find({
+  comments: {
+    $elemMatch: {
+      "date": {
+        $gte: ISODate("2011-01-01T00:00:00Z"),
+        $lt: ISODate("2012-01-01T00:00:00Z")
+      },
+      $or: [
+        { email: { $regex: /\b@fakegmail.com\b/i } },
+        { email: { $regex: /\b@@gameofthron.es\b/i } }
+      ]
+    }
+  }
+}).count();
+
+
+//Part 1, Query 6
+
+// using the findOne method to find a movie with a short runtime, with has both 
+// english and french as a language, and a low imbd rating, must either be a 
+// horror or a mystery movie
+
+// This findOne() statment includes 3 comparison operators, 2 array operator and 
+// and projection
+
+db.movies.findOne(
+  {
+    runtime: { $lt: 90 },
+    languages: { $all: ["English", "French"] },
+    "imdb.rating": { $lte: 4.0 },
+    genres:{ $elemMatch: { $in: [ "Horror", "Mystery" ]}}
+  },
+  {
+    title: 1,
+    runtime: 1,
+    "imdb.rating": 1,
+    genres: 1,
+    languages: 1,
+    _id: 0,
+  }
+)
+
+////////////////////////////////////////////
+//      Part 2: Create (Insert)           //
+////////////////////////////////////////////
+
+// •	Two new movie documents
+// •	Three new user documents
+// •	3 marks each
+// •	Total 15 marks
+// 3 marks each for insert statements that work and match the structure specified
+
+//Part 2, Query 1
+
+//Please run this with the below insert command
+const customId1 = "111a2222f29313caabcdc27f"; //Talk to me ID
+
+db.movies.insertOne({
+  _id: ObjectId(customId1),
+    title: "Talk To Me",
+    year: 2022,
+    genres: ["Horror"],
+    languages: ["English"],
+    runtime: 142,
+    released: new Date("2022-10-30"),
+    directors: ["Danny Philippou", "Michael Philippou"],
+    writers: ["Danny Philippou", "Bill Hinzman"],
+    cast: ["Ari McCarthy", "Hamish Phillips", "Kit Erhart-Bruce", "Sarah Brokensha", "Jayden Davison"],
+    imdb: { rating: 7.3, votes: 103 },
+    countries: ["Austrialia"],
+    poster: "https://m.media-amazon.com/images/M/MV5BMmY5ZGE4NmUtZWI4OS00ZWJmLWFjMzgtOWUyZjI4NDg3Y2E5XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_.jpg",
+    plot: "The film follows a group of teenagers who discover they are able to contact spirits using a mysterious severed and embalmed hand, only for things to go too far.",
+    fullplot: "Jade convinces Mia to join her for a party, mainly because Jade’s boyfriend Daniel (Otis Dhanji) will be there. Riley joins them as they sneak out. The party is hosted by Joss (Chris Alosio) and Hayley (Zoe Terakes). Everyone gathers as they take out an embalmed hand of a medium with writing scribbled on it. The purpose of their game is to hold onto the hand so that spirits may be conjured. Mia volunteers to go first. Hayley lights a candle and instructs Mia on what to say. She grabs the hand and says “Talk to me.” Mia sees the spirit of an old man and freaks out at first, but then goes back and repeats the phrase, followed by “I let you in.” She sees the spirit of a grotesque looking woman and holds for longer than before, though Mia appears possessed and starts speaking in a creepy, threatening voice toward Riley before the hand is pulled from her grip.",
+    awards: "2 wins, 4 nominations",
+    type: "movie",
+    rated: "R",
+    tomatoes: {
+      viewer: { rating: 4.8, numReviews: 60, meter: 76 },
+      critic: { rating: 7.6, numReviews: 180, meter: 68 },
+      consensus: "With a gripping story and impressive practical effects, Talk to Me spins a terrifically creepy 21st-century horror yarn built on classic foundations."
+    }
+  })
+
+//to find Talk to me in database after insert
+db.movies.find({ "_id": ObjectId("111a2222f29313caabcdc27f") })
+
+//Part 2, Query 2
+
+//Please run this with the below insert command
+const customId2 = "222a2222f29313caabcdc27f"; //Zoolander ID
+
+db.movies.insertOne({
+  _id: ObjectId(customId2),
+    title: "Zoolander",
+    year: 2001,
+    genres: ["Comedy"],
+    languages: ["English","French","German"],
+    runtime: 110,
+    released: new Date("2001-07-02"),
+    directors: ["Ben Stiller"],
+    writers: ["Drake Sather", "Ben Stiller"],
+    cast: ["Ben Stiller", "Owen Wilson", "Will Ferrell", "Christine Taylor", "Milla Jovovich", "Jerry Stiller", "Jon Voight"],
+    imdb: { rating: 6.8, votes: 3001 },
+    countries: ["USA"],
+    poster: "https://upload.wikimedia.org/wikipedia/en/7/7c/Movie_poster_zoolander.jpg",
+    plot: "Derek, a model, loses hope when his rival wins a coveted title. In a bid to revive his career, a designer offers him a runway show but ends up convincing him to kill the prime minister of Malaysia.",
+    fullplot: "Propelled to the top of the fashion world by a photogenic gaze he calls Blue Steel, dimwitted male model Derek Zoolander (Ben Stiller) thinks he's got a fourth consecutive win as Male Model of the Year in the bag. But, when his rival, Hansel (Owen Wilson), unexpectedly takes the crown, Derek is crushed. He becomes easy prey for fashion designer Jacobim Mugatu (Will Ferrell), who signs Derek to star in his Derelicte fashion show, then brainwashes him to kill Malaysia's prime minister.",
+    awards: "10 wins, 14 nominations",
+    type: "movie",
+    rated: "PG-13",
+    tomatoes: {
+      viewer: { rating: 4.5, numReviews: 2900, meter: 53 },
+      critic: { rating: 5.0, numReviews: 215, meter: 54 },
+      consensus: "A wacky satire on the fashion industry, Zoolander is one of those deliberately dumb comedies that can deliver genuine laughs."
+    }
+  })
+
+//to find Zoolander to me in database after insert
+db.movies.find({ "_id": ObjectId("222a2222f29313caabcdc27f") })
+
+
+//Part 2, Query 3
+
+//Please run this with the below insert command
+const customId2 = "222a2222f29313caabcdc27f"; //Zoolander Movie
+
+db.movies.updateOne(
+  { "_id": ObjectId(customId2) }, // add to Zoolander movie
+  {
+    $push: {
+      "comments": {
+        name: "Kate Moon",
+        email: "moon@fakegmail.com",
+        movie_id: ObjectId(customId2),
+        text: "Very funny watch.",
+        date: new Date("2023-01-01T00:00:00Z")
+      }
+    }
+  }
+)
+
+// to find comment from user after insert
+db.movies.find({ "_id": ObjectId("222a2222f29313caabcdc27f") })
+
+
+//Part 2, Query 4
+
+//Please run this with the below insert command
+const customId1 = "111a2222f29313caabcdc27f"; //Talk to me ID
+
+db.movies.updateOne(
+  { "_id": ObjectId(customId1) }, // add to Talk to Me movie
+  {
+    $push: {
+      "comments": {
+        name: "Mark Black",
+        email: "black@fakegmail.com",
+        movie_id: ObjectId(customId1),
+        text: "Super Scary",
+        date: new Date("2022-01-01T00:00:00Z")
+      }
+    }
+  }
+)
+
+// to find comment from user after insert
+db.movies.find({ "_id": ObjectId("111a2222f29313caabcdc27f") })
+
+
+//Part 2, Query 5
+
+//Please run this with the below insert command
+const movieID = "573a13eef29313caabdd6990"; //already in database
+
+db.movies.updateOne(
+  { "_id": ObjectId(movieID) }, // add to Talk to Me movie
+  {
+    $push: {
+      "comments": {
+        name: "Frank Clem",
+        email: "clemmie@fakegmail.com",
+        movie_id: ObjectId(movieID),
+        text: "Was lost fopr the whole movie",
+        date: new Date("2022-01-01T00:00:00Z")
+      }
+    }
+  }
+)
+
+// to find comment from user after insert
+db.movies.find({ "_id": ObjectId("573a13eef29313caabdd6990") })
+
+
+////////////////////////////////////////////
+//       Part 3: Update, Delete           //
+////////////////////////////////////////////
+
+// •	Four updates
+// •	One delete
+// •	3 marks each
+// •	Total 15 marks
+// 3 marks each for update/delete statements that correctly update/delete documents as per the spec.
+
+//Part 3, Query 1
+
+db.movies.updateOne(
+    { "title": "Inception" },
+    {
+      $set: {
+        "genres": ["Action", "Sci-Fi", "Thriller"],
+        "tomatoes.viewer.rating": 4.5,
+        "awards": {
+          "nominations": 8,
+          "wins": 4,
+          "categories": ["Best Picture", "Best Director"]
+        }
+      },
+      $push: {
+        "cast": { $each: ["Tommy Hardy", "Elliot Page"], $position: 1 },
+        "comments": {
+          "name": "Lorna",
+          "email": "lornashall@fakeemail.com",
+          "text": "OMG AMAZING!!",
+          "date": ISODate("2010-10-22T15:23:45Z")
+        }
+      }
+    }
+  )
+
+db.movies.find({ "title": "Inception" })
+
+
+//Part 3, Query 2
+
+db.movies.updateMany(
+    { "countries": "USA", "genres": { $all: ["Action", "Adventure"] } },
+    {
+      $pull: { "languages": { $all: ["English", "Spanish"] } },
+      $set: { "imdb.votes": 5012 },
+      $set: { "ratings": { "critic": 8.2, "audience": 8.5 } }
+    }
+  )
+
+  db.movies.find({"countries": "USA", "genres": { $in: ["Action", "Adventure"] }})
+
+//Part 3, Query 3
+
+db.movies.updateOne(
+  { "title": "The Grand Budapest Hotel", "comments.name": "Shannon Freeman" },
+  {
+      $set: {
+          "tomatoes.viewer.rating": 4.3,
+          "comments.$.text": "So colourful! Was blown away",
+      }
+  }
+)
+
+  db.movies.find({"title": "The Grand Budapest Hotel"})
+
+//Part 3, Query 4
+
+db.movies.updateOne(
+  { "genres": { $all: ["Comedy", "Drama"] } },
+  {
+      $push: {
+          "genres": {
+              $each: ["Romance", "Mystery"],
+              $position: 2
+          }
+      },
+      $unset: { "tomatoes": "", "ratings.critic": "" }
+  }
+)
+
+
+db.movies.find({"genres": { $all: ["Comedy", "Drama"] }})
+
+//Part 3, Quéry 5
+
+db.movies.deleteOne(
+    { "title": "The Grand Budapest Hotel" }
+  )
+
+
+// Part 4: Aggregation
+// •	Two pipelines
+// •	20 marks each
+// •	Total 40 marks
+// Mark out of 20 based on complexity. Top marks for using a wide combination of the stages and operators specified.
+
+//Part 4, Query 1
+
+// this aggregation pipeline finds movies in the USA with genres "Action" or "Drama" and IMDb ratings greater 
+// than or equal to 7.0. It then projects specific fields, groups the results by genre, calculates the average 
+// rating and total movies for each genre, sorts the genres by average rating in descending order, and finally, 
+// limits the output to the top 5 genres based on average rating. The result provides information about the 
+// average rating and total number of movies for the top 5 genres meeting the specified criteria
+
+db.movies.aggregate([
+    {
+      $match: {
+        genres: { $in: ["Action", "Drama"] },
+        countries: "USA",
+        "imdb.rating": { $gte: 7.0 }
+      }
+    },
+    {
+      $project: {
+        title: 1,
+        genres: 1,
+        "imdb.rating": 1,
+        _id: 0
+      }
+    },
+    {
+      $group: {
+        _id: "$genres",
+        avgRating: { $avg: "$imdb.rating" },
+        totalMovies: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { avgRating: -1 }
+    },
+    {
+      $limit: 5
+    }
+  ])
+
+//Part 4, Query 2
+
+// this aggregation pipeline identifies actors who have appeared in comedy and romance movies released after 
+// the 2000's, with IMDb ratings of at least 6.5. It then calculates the total number of movies and average rating 
+// for each actor, filters the results to include only those with at least 2 movies and an average rating 
+// of at least 7.0, sorts the actors based on the total number of movies in descending order, projects 
+// specific fields and limits the result to the top 3 actors.
+
+db.movies.aggregate([
+    {
+      $match: {
+        year: { $gte: 2000 },
+        genres: {$all: ["Comedy","Romance"]},
+        "imdb.rating": { $gte: 6.5 }
+      }
+    },
+    {
+      $unwind: "$cast"
+    },
+    {
+      $group: {
+        _id: "$cast",
+        totalMovies: { $sum: 1 },
+        avgRating: { $avg: "$imdb.rating" }
+      }
+    },
+    {
+      $match: {
+        totalMovies: { $gte: 2 },
+        avgRating: { $gte: 7.0 }
+      }
+    },
+    {
+      $sort: { totalMovies: -1 }
+    },
+    {
+      $project: {
+        actor: "$_id",
+        totalMovies: 1,
+        avgRating: 1,
+        _id: 0
+      }
+    },
+    {
+      $limit: 3
+    }
+  ])
