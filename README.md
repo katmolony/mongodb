@@ -1,6 +1,6 @@
 # MongoDB Assignment
 
-![Helper Image](<Humidity Helper.png>)
+![MongoDB Image](<mongodbpic.png>)
 
 ## Details of Assignment MongoDB
 
