@@ -1,6 +1,6 @@
 # MongoDB Assignment
 
-![MongoDB Image](<mongodbpic.png>)
+![MongoDB Image](<mongodbpic.webp>)
 
 ## Details of Assignment MongoDB
 
