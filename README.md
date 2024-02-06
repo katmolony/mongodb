@@ -1,6 +1,8 @@
 # MongoDB Assignment
 
-Details of Assignment MongoDB
+![Helper Image](<Humidity Helper.png>)
+
+## Details of Assignment MongoDB
 
 This assignment analyses a collection of movies that contains 44,497 documents. 
 
